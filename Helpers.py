@@ -4,6 +4,7 @@ from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import time
+import numpy as np
 
 
 def preprocessDataForTwoColumnsAndNoZeros(data):
@@ -51,6 +52,34 @@ def countAmountPerMonth(data):
 def changeColumnIntoSeries(data):
     df = pd.Series(data)
     return df
+
+
+def addMissingData(data):
+    firstYear = int(data[0][0].split('.')[1])
+    lastYear = int(data[-1][0].split('.')[1])
+    finalData = []
+    currentData = 0
+    for year in range(lastYear - firstYear):
+        for month in range(1, 13):
+            if int(data[currentData][0].split('.')[0]) == month:
+                finalData.append(data[currentData])
+                currentData += 1
+            else:
+                tmp = []
+                if month < 10:
+                    tmp.append('0' + str(month) + '.' + str(firstYear + year))
+                else:
+                    tmp.append(str(month) + '.' + str(firstYear + year))
+                tmp.append(int(0))
+                finalData.append(tmp)
+    return finalData
+
+
+def transformDataIntoSeries(data):
+    chart = np.array(data)
+    values = chart[:, 1].astype(int)
+    series = changeColumnIntoSeries(values)
+    return series
 
 
 def arimaModel(series, order, name, type):
