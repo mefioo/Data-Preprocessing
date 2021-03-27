@@ -56,13 +56,13 @@ _szybka_month = Helpers.addMissingData(_szybka_month)[12:]
 # print(f"pwz52 {len(_pwz52_month)/12}")    #14
 # print(f"szybka {len(_szybka_month)/12}")  #14
 
-series = Helpers.transformDataIntoSeries(_szybka_month)
+series = Helpers.transformDataIntoSeries(_GP6x_month)
 
 order = (36, 0, 24)
 type = 'short'
 lag = 60
 name = 'pwz52'
-onlyshow = 0
+onlyshow = 1
 arima = 0
 
 if arima:
@@ -75,17 +75,21 @@ if arima:
     else:
         Helpers.arimaModel(series, order, name, type)
 else:
-    epochs = [50, 100, 250, 500, 1000, 2000]
-    results = []
-    for epoch in epochs:
-        runs = 20
-        sum = 0
-        for i in range(runs):
-            sum += MLP.MLP(_szybka_month, _pwz52_month, _15x30l_month, _10x14f_month, _GP6x_month, _GP4x_month, epoch, showPlot=0)
-        results.append(sum/runs)
-        print(f"Done for {epoch} epochs.")
-    for i in range(len(results)):
-        print(f"Epochs: {epochs[i]}, mean: {results[i]}")
+    neurons = [x for x in range(5, 15)]
+    epochs = [x for x in range(200, 1000, 100)]
+    parameters = [[5, 400], [6, 700], [8, 300], [9, 400], [9, 500], [11, 700], [12, 400], [12, 600], [13, 900]]
+    parameters = [[12, 400] for i in range(10)]
+
+    mlp = MLP.MLPNN(_GP6x_month, 1100, 15)
+    mlp.single_MLP()
+
+    # Helpers.printDataset(_GP6x_month)
+
+    # MLP.MLP(_szybka_month, epochs, neurons)
+    # MLP.compareMLPs(_pwz52_month, parameters)
+    # MLP.singleMLP(_GP6x_month, 1100, 15)
+
+    # MLP.shortMLP(_GP6x_month, 1000, 250)
 
 
 ### _GP4x_month
@@ -97,6 +101,20 @@ else:
 # Epochs: 2000, mean: 14.658024100122471
 # Epochs: 5000, mean: 14.110245799691338
 
+# Neurons: 1, mean: 13.733801841663995
+# Neurons: 2, mean: 13.50375260822307
+# Neurons: 3, mean: 12.964490457169637
+# Neurons: 4, mean: 13.114200505181998
+# Neurons: 5, mean: 12.772144609319255
+# Neurons: 6, mean: 12.956626280670303
+# Neurons: 7, mean: 13.054019954807284
+# Neurons: 8, mean: 13.273711817326788
+# Neurons: 9, mean: 13.230705484555415
+# Neurons: 10, mean: 13.671764578181044
+# Neurons: 11, mean: 13.76162733982827
+# Neurons: 12, mean: 13.442643765943206
+
+
 ### _GPx6_month
 # Epochs: 50, mean: 41.970510305024476
 # Epochs: 100, mean: 37.26827266332147
@@ -104,6 +122,12 @@ else:
 # Epochs: 500, mean: 34.90812512587372
 # Epochs: 1000, mean: 36.30285889548877
 # Epochs: 2000, mean: 38.27564636672984
+# Epochs: 50, mean: 0.45659690827311844
+# Epochs: 100, mean: 0.44927393755618084
+# Epochs: 250, mean: 0.4513894527838346
+# Epochs: 500, mean: 0.4770499726002786
+# Epochs: 1000, mean: 0.4938849858006121
+# Epochs: 2000, mean: 0.48377348129286013
 
 ### _10x14f_month
 # Epochs: 50, mean: 93.51938630338424

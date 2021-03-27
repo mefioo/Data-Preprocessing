@@ -101,7 +101,7 @@ def arimaModel(series, order, name, type):
         predictions.append(prediction)
         actualValue = testSet[i]
         if type == 'short':
-            historyValues.append(actualValue)#prediction)
+            historyValues.append(actualValue)
         else:
             historyValues.append(prediction)
         end = time.time()
@@ -146,3 +146,11 @@ def get_stationarity(timeseries):
     print('Critical Values:')
     for key, value in result[4].items():
         print('\t{}: {}'.format(key, value))
+
+
+def printDataset(data):
+    result = [x[1] for x in data]
+    plt.plot(result, label='Original')
+    plt.legend(loc='best')
+    plt.title(f'Dataset')
+    plt.show()
