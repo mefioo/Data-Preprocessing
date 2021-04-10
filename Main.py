@@ -49,13 +49,6 @@ _GP6x_month = Helpers.addMissingData(_GP6x_month)
 _pwz52_month = Helpers.addMissingData(_pwz52_month)[12:]
 _szybka_month = Helpers.addMissingData(_szybka_month)[12:]
 
-# print(f"10x14f {len(_10x14f_month)/12}")  #13
-# print(f"15x30l {len(_15x30l_month)/12}")  #14
-# print(f"GP4x {len(_GP4x_month)/12}")      #14
-# print(f"GP6x {len(_GP6x_month)/12}")      #13
-# print(f"pwz52 {len(_pwz52_month)/12}")    #14
-# print(f"szybka {len(_szybka_month)/12}")  #14
-
 series = Helpers.transformDataIntoSeries(_GP6x_month)
 
 order = (36, 0, 24)
@@ -75,15 +68,16 @@ if arima:
     else:
         Helpers.arimaModel(series, order, name, type)
 else:
-    neurons = [x for x in range(5, 15)]
-    epochs = [x for x in range(200, 1000, 100)]
-    parameters = [[5, 400], [6, 700], [8, 300], [9, 400], [9, 500], [11, 700], [12, 400], [12, 600], [13, 900]]
+    neurons = [x for x in range(10, 20)]
+    epochs = [x for x in range(1000, 2000, 100)]
+    parameters = [[10, 1500], [11, 1800], [12, 1200], [13, 1900], [14, 1100], [14, 1000], [15, 1800], [16, 1900], [16, 1100], [17, 1500], [17, 1900]]
     parameters = [[12, 400] for i in range(10)]
 
-    mlp = MLP.MLPNN(_GP6x_month, 1100, 15)
+    mlp = MLP.MLPNN('szybka', _szybka_month, 14, 9500)
+    # mlp.check_neurons_epochs_MLP(epochs, neurons)
     mlp.single_MLP()
 
-    # Helpers.printDataset(_GP6x_month)
+    # Helpers.printDataset(_GP4x_month)
 
     # MLP.MLP(_szybka_month, epochs, neurons)
     # MLP.compareMLPs(_pwz52_month, parameters)

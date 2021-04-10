@@ -5,6 +5,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 import time
 import numpy as np
+import math
 
 
 def preprocessDataForTwoColumnsAndNoZeros(data):
@@ -154,3 +155,8 @@ def printDataset(data):
     plt.legend(loc='best')
     plt.title(f'Dataset')
     plt.show()
+
+
+def roundUpData(data):
+    return [math.ceil(x) for x in data]
+
