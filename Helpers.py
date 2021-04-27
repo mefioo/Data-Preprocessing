@@ -75,10 +75,12 @@ def addMissingData(data):
                 finalData.append(tmp)
     return finalData
 
-
+import random
 def transformDataIntoSeries(data):
     chart = np.array(data)
-    values = chart[:, 1].astype(int)
+    values = list(chart[:, 1].astype(int))
+    # for i in range(10000):
+    #     values.append(random.randint(70, 110))
     series = changeColumnIntoSeries(values)
     return series
 
@@ -160,3 +162,15 @@ def printDataset(data):
 def roundUpData(data):
     return [math.ceil(x) for x in data]
 
+
+def autofillWithZeros(data):
+    dates = pd.date_range('01.01.2007', '31.12.2020')
+    dates = [[x._date_repr[8:] + '.' + x._date_repr[5:7] + '.' + x._date_repr[0:4], '0'] for x in dates]
+    data = list(reversed(data))
+    for data_chunk in data:
+        start = 0
+        for i in range(start, len(dates)):
+            if data_chunk[0] == dates[i][0]:
+                dates[i][1] = str(int(data_chunk[1]) + int(dates[i][1]))
+                start = i
+    return dates

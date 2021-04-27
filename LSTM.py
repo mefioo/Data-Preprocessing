@@ -3,17 +3,17 @@ import Helpers as hp
 from keras.models import Sequential
 from keras.layers import Dense, LSTM
 from tensorflow import keras
-from math import sqrt
+from math import sqrt, floor
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
 
 
-class MLPNN:
-    def __init__(self, set_name, data, neurons, epochs, hidden_layers=1, lags=24, batch_size=60, lr=0.000009, momentum=0.9, optimizer='sgd', loss='mse', show=1):
+class LSTMNN:
+    def __init__(self, set_name, data, units, epochs, hidden_layers=1, lags=24, batch_size=120, lr=0.0009, momentum=0.9, optimizer='adam', loss='mae', show=1):
         self.set_name = set_name
-        self.neurons = neurons
+        self.units = units
         self.epochs = epochs
         self.hidden_layers = hidden_layers
         self.lags = lags
@@ -30,32 +30,35 @@ class MLPNN:
         self.save = 0
 
     def set_model_name(self):
-        model_name = 'model' + self.set_name + '_n' + str(self.neurons) + '_e' + str(self.epochs) + '_lr' + str(self.lr) + '.h5'
+        model_name = 'model' + self.set_name + '_u' + str(self.units) + '_e' + str(self.epochs) + '_lr' + str(self.lr) + '.h5'
         return model_name
 
     def create_input_data(self):
         data = hp.transformDataIntoSeries(self.data)
         x, y = [], []
-        for step in range(24, len(data)):
+        for step in range(self.lags, len(data)):
             startStep = step - self.lags
             tmp = []
             for i in range(self.lags):
                 tmp.append(data[startStep + i])
+                # tmp.append(step % 12)
+                # tmp.append((floor(step % 12)/4))
             x.append(tmp)
             y.append(data[step])
         return np.array(x), np.array(y)
 
     def scale_data(self, x, y):
         x, y = x.astype(float), y.astype(float)
-        rows = len(x)
+        rows = x.shape[0]
+        columns = x.shape[1]
         x = np.array(x).reshape(-1, 1)
         y = np.array(y).reshape(-1, 1)
-        scaler = MinMaxScaler(feature_range=(-1, 1))
+        scaler = MinMaxScaler(feature_range=(0, 1))
         scalerX = scaler.fit(x)
         scalerY = scaler.fit(y)
         x = scalerX.transform(x)
         y = scalerY.transform(y)
-        x = np.array(x).reshape(rows, self.lags)
+        x = np.array(x).reshape(rows, columns)
         y = np.array(y).reshape(-1)
         return x, y, scaler
 
@@ -68,12 +71,17 @@ class MLPNN:
 
     def split_to_train_and_test(self):
         x, y = self.create_input_data()
-        years = 5
+        years = 6
         split = 12 * years
+        self.data = np.array(np.column_stack((x, y)))
+        self.train = self.data[:-split]
+        self.test = self.data[-split:]
         self.expected = y[-split:]
         x, y, scaler = self.scale_data(x, y)
         x_train, y_train = x[:-split], y[:-split]
         x_test, y_test = x[-split:], y[-split:]
+        x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+        x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
         return x_train, y_train, x_test, y_test, scaler
 
     def choose_optimizer(self):
@@ -86,9 +94,9 @@ class MLPNN:
     def fit_model(self):
         model = Sequential()
         for i in range(self.hidden_layers):
-            model.add(Dense(self.neurons, activation='sigmoid', input_dim=self.x_train.shape[1]))
+            model.add(LSTM(self.units, activation='relu', input_shape=(self.x_train.shape[1], 1)))
         model.add(Dense(1))
-        model.compile(loss='mse', optimizer=self.choose_optimizer())
+        model.compile(loss=self.loss, optimizer=self.choose_optimizer())
         es = keras.callbacks.EarlyStopping(
             monitor='loss', patience=5, verbose=0, mode='auto',
         )
@@ -103,9 +111,12 @@ class MLPNN:
         output = model.predict(self.x_test, batch_size=self.batch_size)
         predictions = hp.changeColumnIntoSeries(output.transpose()[0]).values
         predictions = hp.roundUpData(self.scale_data_back(predictions))
+        # tmp = self.scale_data_back(self.y_test)
         expected = self.expected
         rmse = sqrt(mean_squared_error(expected, predictions))
         print(rmse)
+        # print(self.expected)
+        # print(tmp)
         return predictions, expected, lossHistory
 
     def show_plot(self, predictions, expected, loss_history):
@@ -113,7 +124,7 @@ class MLPNN:
         if self.save:
             plt.savefig(self.model_name[:-3] + '_loss')
         plt.show()
-        plt.plot(predictions, label=f'Predicted {self.neurons}, {self.epochs}')
+        plt.plot(predictions, label=f'Predicted {self.units}, {self.epochs}')
         plt.plot(expected, label='Original')
         plt.legend(loc='best')
         plt.title(f'Prediction for {self.set_name} set')
@@ -121,47 +132,6 @@ class MLPNN:
             plt.savefig(self.model_name[:-3] + '_prediction')
         plt.show()
 
-    def single_MLP(self):
+    def single_LSTM(self):
         predictions, expected, lossHistory = self.fit_and_compare()
         self.show_plot(predictions, expected, lossHistory)
-
-    def check_neurons_epochs_MLP(self, neurons, epochs):
-        for neuron in neurons:
-            self.neurons = neuron
-            for epoch in epochs:
-                self.epochs = epoch
-                predictions, expected, lossHistory = self.fit_and_compare()
-                plt.plot(predictions, label=f'Predicted {neuron}, {epoch}')
-            plt.plot(expected, label='Original')
-            plt.legend(loc='best')
-            plt.title(f'Prediction for sth set')
-            plt.show()
-
-
-# def MLP(data, epochsList, neuronsList, lags=24):
-#     x_train, y_train, x_test, y_test, scaler = prepareData(data, lags)
-#     for neurons in neuronsList:
-#         for epochs in epochsList:
-#             predictions, expected, lossHistory = fitAndCompare(x_train, y_train, x_test, y_test, epochs, neurons, scaler)
-#             if len(neuronsList) > 1:
-#                 plt.plot(predictions, label=f'predicted {neurons}, {epochs}')
-#             else:
-#                 plt.plot(pd.Series(lossHistory))
-#                 plt.show()
-#                 plt.plot(predictions, color='red', label='predicted')
-#         plt.plot(expected, label='Original')
-#         plt.legend(loc='best')
-#         plt.title(f'Prediction for sth set')
-#         plt.show()
-#     return lossHistory
-#
-#
-# def compareMLPs(data, parameters, lags=24):
-#     x_train, y_train, x_test, y_test, scaler = prepareData(data, lags)
-#     for neurons, epochs in parameters:
-#         predictions, expected, lossHistory = fitAndCompare(x_train, y_train, x_test, y_test, epochs, neurons, scaler)
-#         plt.plot(predictions, label=f'predicted {neurons}, {epochs}')
-#     plt.plot(expected, label='Original')
-#     plt.legend(loc='best')
-#     plt.title(f'Prediction for sth set')
-#     plt.show()
